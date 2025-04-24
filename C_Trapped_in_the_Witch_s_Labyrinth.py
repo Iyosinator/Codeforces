@@ -1,69 +1,59 @@
 import sys
+from collections import deque
 
 input = sys.stdin.readline
 
-q = int(input().strip())
-for i in range(q):
+DIRECTIONS = {'U': (-1, 0), 'D': (1, 0), 'L': (0, -1), 'R': (0, 1)}
+
+t = int(input().strip())
+
+for _ in range(t):
     n, m = map(int, input().strip().split())
-    grid = [input().strip() for i in range(n)]
+    grid = [list(input().strip()) for _ in range(n)]
 
+    can_escape = [[False] * m for _ in range(n)]
+    exit_cells = []
 
-    vis = [[0] * m for _ in range(n)]
-   
-    directions = [(0, 1), (1, 0), (-1, 0), (0, -1)]
+    for r in range(n):
+        for c in range(m):
+            cell = grid[c][c]
+            if cell in DIRECTIONS:
+                dr, dc = DIRECTIONS[cell]
+                nr, nc = r + dr, c + dc
+                if not (0 <= nr < n and 0 <= nc < m):
+                    can_escape[r][c] = True
+                    exit_cells.append((r, c))
 
-    i = {"L": (0, -1), "R": (0, 1), "U": (-1, 0), "D": (1, 0), "?": (0, 0)}
+    queue = deque(exit_cells)
+    while queue:
+        r, c = queue.popleft()
+        for dir_char, (dr, dc) in DIRECTIONS.items():
+            pr, pc = r - dr, c - dc
+            if 0 <= pr < n and 0 <= pc < m:
+                if grid[pr][pc] == dir_char and not can_escape[pr][pc]:
+                    can_escape[pr][pc] = True
+                    queue.append((pr, pc))
 
-    def inbound(r, c):
-        return 0 <= r < n and 0 <= c < m
+    changed = True
+    while changed:
+        changed = False
+        for r in range(n):
+            for c in range(m):
+                if grid[r][c] == '?' and not can_escape[r][c]:
+                    all_neighbors_good = True
+                    for dr, dc in DIRECTIONS.values():
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < n and 0 <= nc < m:
+                            if not can_escape[nr][nc]:
+                                all_neighbors_good = False
+                                break
+                    if all_neighbors_good:
+                        can_escape[r][c] = True
+                        changed = True
 
-    stack = []
-
-    for i in range(n):
-        if grid[i][0] == "L":   
-            vis[i][0] = 1
-            stack.append((i, 0))
-        
-     
-        if grid[i][m - 1] == "R":
-            vis[i][m - 1] = 1
-            stack.append((i, m - 1))
-
-            
-    for j in range(m):
-        if grid[0][j] == "U":
-            vis[0][j] = 1
-            stack.append(0, j)
-        if grid[n - 1][j] == "D":
-            vis[n - 1][j] = 1
-            stack.append(n - 1, j)
-    
-    while stack:
-        row, col = stack.pop()
-        for dr, dc in directions:
-            r = dr + row
-            c = dc + col
-            
-            if inbound(r, c) and vis[r][c] == 0:
-                dr2, dc2 = ind[grid[r][c]]
-                if r + dr2 == row and c + dc2 == col:
-                    vis[r][c] = 1
-                    stack.append((r, c))
-
-    for i in range(n):
-        for j in range(m):
-            if grid[i][j] == "?":
-                f = 1
-                for dr, dc in directions:
-                    r = i + dr
-                    c = j + dc
-                    if inbound(r, c):
-                        f &= vis[r][c]
-                vis[i][j] = f
-
-    ans = 0
-    for i in range(n):
-        for j in range(m):
-            ans += (vis[i][j] ^ 1)
-
-    #print(ans)
+    trapped = 0
+    for r in range(n):
+        for c in range(m):
+            if not can_escape[r][c]:
+                trapped += 1
+    print(trapped)
